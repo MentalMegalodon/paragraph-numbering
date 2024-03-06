@@ -53,12 +53,13 @@ namespace = {
     'word': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
 }
 
+
 def insertParNums(old, newMargin, newInline):
     '''
     This inserts a textbox to the left of the paragraph, containing the
     paragraph number.
     '''
-    zin   = zipfile.ZipFile(old, 'r')
+    zin = zipfile.ZipFile(old, 'r')
     zoutMargin = zipfile.ZipFile(newInline, 'w')
     zoutInline = zipfile.ZipFile(newMargin, 'w')
     # .docx files are actually stored as a zipped up set of xml files.
@@ -71,9 +72,9 @@ def insertParNums(old, newMargin, newInline):
             # breakpoint()
             print(text[:5000])
             # final = addStuff(text)
-            finalMargin  = ''
-            finalInline  = ''
-            count  = 1
+            finalMargin = ''
+            finalInline = ''
+            count = 1
             # x is the text, y is the tab and stuff.
             for line in text.split('</w:p>'):
                 line += '</w:p>'
@@ -87,7 +88,7 @@ def insertParNums(old, newMargin, newInline):
                     print(f"{y=}")
                     print(f"{z=}")
                     print()
-                except Exception as e:
+                except Exception:
                     # print(e)
                     if ('Chapter' in line or
                         'Prologue' in line or
@@ -119,6 +120,7 @@ def insertParNums(old, newMargin, newInline):
     zoutMargin.close()
     zoutInline.close()
     zin.close()
+
 
 def newParNums(oldFile, newFile):
     doc = Document(oldFile)

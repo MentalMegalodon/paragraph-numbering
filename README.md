@@ -12,6 +12,6 @@ Clone the git repository.
 This will produce an output file `<filename> with inline numbers.docx` that should have the proper paragraph numbers.
 
 ## Goals
-- Rewrite code to use the built-in python xml parser and insert the paragraph numbers without any other modification of the underlying text.
-- Re-add code to insert both inline and margin numbers, to be more friendly to kindle formatting.
-- Containerize the project so it can be run more easily on any machine.
+- [ ] Clean up command line interface and add options for viewing the xml file instead of commenting/uncommenting code.
+- [ ] Rewrite code to use the built-in python xml parser and insert the paragraph numbers without any other modification of the underlying text.
+- [ ] Re-add code to insert both inline and margin numbers, to be more friendly to kindle formatting.

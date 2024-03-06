@@ -5,9 +5,10 @@
 import zipfile
 import re
 from sys import argv
-from docx import Document
-from docx.shared import RGBColor, Inches
+# from docx import Document
+# from docx.shared import RGBColor, Inches
 # import xml.etree.ElementTree as ET
+from lxml import etree
 
 # This matches all tab styles that I found.
 # If I'm missing a paragraph, let me know.
@@ -61,64 +62,76 @@ def insertParNums(old, newMargin, newInline):
     '''
     zin = zipfile.ZipFile(old, 'r')
     zoutMargin = zipfile.ZipFile(newInline, 'w')
-    zoutInline = zipfile.ZipFile(newMargin, 'w')
-    # .docx files are actually stored as a zipped up set of xml files.
+    # zoutInline = zipfile.ZipFile(newMargin, 'w')
+    # .docx files are actually a zipped up set of xml files.
     for item in zin.infolist():
         buf = zin.read(item.filename)
         # This is the one that contains the text of the document.
         if item.filename == 'word/document.xml':
             text = buf.decode('utf-8')
-            # root = ET.fromstring(text)
-            # breakpoint()
-            print(text[:5000])
-            # final = addStuff(text)
-            finalMargin = ''
-            finalInline = ''
+            parser = etree.XMLParser(no_network=False)
+            root = etree.fromstring(text.encode(), parser)
+            ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+            paragraphs = root.findall('.//w:p', ns)
             count = 1
-            # x is the text, y is the tab and stuff.
-            for line in text.split('</w:p>'):
-                line += '</w:p>'
-                # print(line)
-                lineMargin = lineInline = line
-                try:
-                    result = re.split(pattern, line, maxsplit=1)
-                    print(f"{result=}")
-                    x, _, y, z = result
-                    print(f"{x=}")
-                    print(f"{y=}")
-                    print(f"{z=}")
-                    print()
-                except Exception:
-                    # print(e)
-                    if ('Chapter' in line or
-                        'Prologue' in line or
-                        'EPILOGUE' in line or
-                        'Scene' in line):
-                        count = 1
-                else:
-                    if ('Chapter' in line or
-                        'Prologue' in line or
-                        'EPILOGUE' in line or
-                        'Scene' in line):
-                        count = 1
-                    else:
-                        if '<w:t>' in z:
-                            lineMargin = x + margin.format(count) + y + z
-                            lineInline = x + inline.format(count) + y + z
-                        else:
-                            lineMargin = lineInline = line
-                        count += 1
-                finalMargin += lineMargin
-                print(f"{lineInline=}")
-                finalInline += lineInline
-            # Write out all files, including modified text.
-            zoutMargin.writestr(item, finalMargin.encode('utf-8'))
-            zoutInline.writestr(item, finalInline.encode('utf-8'))
+            for p in paragraphs:
+                if p.findall('.//w:t', ns):
+                    first_run = p.find('.//w:r', ns)
+                    my_run = etree.Element("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r")
+                    run_text = etree.SubElement(my_run, '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t')
+                    run_text.text = str(count)
+                    first_run.addprevious(my_run)
+                    count += 1
+#             breakpoint()
+#             print(text[:5000])
+#             # final = addStuff(text)
+#             finalMargin = ''
+#             finalInline = ''
+            # count = 1
+#             # x is the text, y is the tab and stuff.
+#             for line in text.split('</w:p>'):
+#                 line += '</w:p>'
+#                 # print(line)
+#                 lineMargin = lineInline = line
+                # try:
+#                     result = re.split(pattern, line, maxsplit=1)
+#                     print(f"{result=}")
+#                     x, _, y, z = result
+#                     print(f"{x=}")
+#                     print(f"{y=}")
+#                     print(f"{z=}")
+#                     print()
+#                 except Exception:
+#                     # print(e)
+#                     if ('Chapter' in line or
+#                         'Prologue' in line or
+#                         'EPILOGUE' in line or
+#                         'Scene' in line):
+#                         count = 1
+                # else:
+#                     if ('Chapter' in line or
+#                         'Prologue' in line or
+#                         'EPILOGUE' in line or
+#                         'Scene' in line):
+#                         count = 1
+#                     else:
+#                         if '<w:t>' in z:
+#                             lineMargin = x + margin.format(count) + y + z
+#                             lineInline = x + inline.format(count) + y + z
+#                         else:
+#                             lineMargin = lineInline = line
+#                         count += 1
+#                 finalMargin += lineMargin
+#                 print(f"{lineInline=}")
+#                 finalInline += lineInline
+#             # Write out all files, including modified text.
+            zoutMargin.writestr(item, etree.tostring(root))
+            # zoutInline.writestr(item, finalInline.encode('utf-8'))
         else:
             zoutMargin.writestr(item, buf)
-            zoutInline.writestr(item, buf)
+            # zoutInline.writestr(item, buf)
     zoutMargin.close()
-    zoutInline.close()
+    # zoutInline.close()
     zin.close()
 
 
@@ -188,5 +201,5 @@ if __name__ == '__main__':
     # exit(1)
     marginFile = oldFile.split('.docx')[0] + ' with margin numbers.docx'
     inlineFile = oldFile.split('.docx')[0] + ' with inline numbers.docx'
-    # insertParNums(oldFile, marginFile, inlineFile)
-    newParNums(oldFile, inlineFile)
+    insertParNums(oldFile, marginFile, inlineFile)
+    # newParNums(oldFile, inlineFile)

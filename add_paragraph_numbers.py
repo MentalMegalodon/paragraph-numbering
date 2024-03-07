@@ -5,10 +5,9 @@
 import zipfile
 import re
 from sys import argv
-# from docx import Document
-# from docx.shared import RGBColor, Inches
-# import xml.etree.ElementTree as ET
 from lxml import etree
+from argparse import ArgumentParser
+from os.path import isfile
 
 # This matches all tab styles that I found.
 # If I'm missing a paragraph, let me know.
@@ -71,60 +70,24 @@ def insertParNums(old, newMargin, newInline):
             text = buf.decode('utf-8')
             parser = etree.XMLParser(no_network=False)
             root = etree.fromstring(text.encode(), parser)
-            ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+            w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            ns = {"w": w}
             paragraphs = root.findall('.//w:p', ns)
             count = 1
             for p in paragraphs:
                 if p.findall('.//w:t', ns):
                     first_run = p.find('.//w:r', ns)
-                    my_run = etree.Element("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r")
-                    run_text = etree.SubElement(my_run, '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t')
+                    my_run = etree.Element(f"{{{w}}}r")
+                    run_rpr = etree.SubElement(my_run, f'{{{w}}}rPr')
+                    run_align = etree.SubElement(run_rpr, f'{{{w}}}vertAlign')
+                    run_align.attrib[f'{{{w}}}val'] = 'superscript'
+                    run_color = etree.SubElement(run_rpr, f'{{{w}}}color')
+                    run_color.attrib[f'{{{w}}}val'] = 'A7A7A7'
+                    run_text = etree.SubElement(my_run, f'{{{w}}}t')
                     run_text.text = str(count)
                     first_run.addprevious(my_run)
                     count += 1
-#             breakpoint()
-#             print(text[:5000])
-#             # final = addStuff(text)
-#             finalMargin = ''
-#             finalInline = ''
-            # count = 1
-#             # x is the text, y is the tab and stuff.
-#             for line in text.split('</w:p>'):
-#                 line += '</w:p>'
-#                 # print(line)
-#                 lineMargin = lineInline = line
-                # try:
-#                     result = re.split(pattern, line, maxsplit=1)
-#                     print(f"{result=}")
-#                     x, _, y, z = result
-#                     print(f"{x=}")
-#                     print(f"{y=}")
-#                     print(f"{z=}")
-#                     print()
-#                 except Exception:
-#                     # print(e)
-#                     if ('Chapter' in line or
-#                         'Prologue' in line or
-#                         'EPILOGUE' in line or
-#                         'Scene' in line):
-#                         count = 1
-                # else:
-#                     if ('Chapter' in line or
-#                         'Prologue' in line or
-#                         'EPILOGUE' in line or
-#                         'Scene' in line):
-#                         count = 1
-#                     else:
-#                         if '<w:t>' in z:
-#                             lineMargin = x + margin.format(count) + y + z
-#                             lineInline = x + inline.format(count) + y + z
-#                         else:
-#                             lineMargin = lineInline = line
-#                         count += 1
-#                 finalMargin += lineMargin
-#                 print(f"{lineInline=}")
-#                 finalInline += lineInline
-#             # Write out all files, including modified text.
+            # Write out all files, including modified text.
             zoutMargin.writestr(item, etree.tostring(root))
             # zoutInline.writestr(item, finalInline.encode('utf-8'))
         else:
@@ -136,6 +99,8 @@ def insertParNums(old, newMargin, newInline):
 
 
 def newParNums(oldFile, newFile):
+    from docx import Document
+    from docx.shared import RGBColor, Inches
     doc = Document(oldFile)
     count = 1
     gray = RGBColor(0xa7, 0xa7, 0xa7)
@@ -168,7 +133,7 @@ def newParNums(oldFile, newFile):
 
 def viewText(fname):
     '''
-    Unused, simply for printing the entire underlying xml file.
+    Print the entire underlying xml file.
     '''
     zin = zipfile.ZipFile(fname, 'r')
     for item in zin.infolist():
@@ -188,18 +153,22 @@ def viewText(fname):
     zin.close()
 
 if __name__ == '__main__':
-    try:
-        oldFile = " ".join(argv[1:])
-    except:
-        print("Please specify a file to convert.")
-        exit()
-    print("Converting", oldFile)
-    if not oldFile.endswith('.docx'):
-        oldFile += '.docx'
-    # breakpoint()
-    # viewText(oldFile)
-    # exit(1)
-    marginFile = oldFile.split('.docx')[0] + ' with margin numbers.docx'
-    inlineFile = oldFile.split('.docx')[0] + ' with inline numbers.docx'
-    insertParNums(oldFile, marginFile, inlineFile)
-    # newParNums(oldFile, inlineFile)
+    parser = ArgumentParser()
+    parser.add_argument('--view', action='store_true',
+                        help='Print the raw xml without modifying the file.')
+    parser.add_argument('--docx', action='store_true',
+                        help='Run the python-docx version.')
+    parser.add_argument('filename')
+    args = parser.parse_args()
+    filename = args.filename
+    if not filename.endswith('.docx'):
+        filename += '.docx'
+    assert isfile(filename), f'{filename} not found.'
+    marginFile = filename.split('.docx')[0] + ' with margin numbers.docx'
+    inlineFile = filename.split('.docx')[0] + ' with inline numbers.docx'
+    if args.view:
+        viewText(filename)
+    elif args.docx:
+        newParNums(filename, inlineFile)
+    else:
+        insertParNums(filename, marginFile, inlineFile)

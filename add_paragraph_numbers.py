@@ -77,12 +77,19 @@ def insertParNums(old, newMargin, newInline):
             for p in paragraphs:
                 if p.findall('.//w:t', ns):
                     first_run = p.find('.//w:r', ns)
+                    first_text = first_run.find('.//w:t', ns)
+                    lower_text = first_text.text.lower().strip()
+                    if (lower_text.startswith('prologue') or 
+                        lower_text.startswith('chapter') or 
+                        lower_text.startswith('epilogue')):
+                        count = 1
+                        continue
                     my_run = etree.Element(f"{{{w}}}r")
                     run_rpr = etree.SubElement(my_run, f'{{{w}}}rPr')
                     run_align = etree.SubElement(run_rpr, f'{{{w}}}vertAlign')
-                    run_align.attrib[f'{{{w}}}val'] = 'superscript'
+                    run_align.set(f'{{{w}}}val', 'superscript')
                     run_color = etree.SubElement(run_rpr, f'{{{w}}}color')
-                    run_color.attrib[f'{{{w}}}val'] = 'A7A7A7'
+                    run_color.set(f'{{{w}}}val', 'A7A7A7')
                     run_text = etree.SubElement(my_run, f'{{{w}}}t')
                     run_text.text = str(count)
                     first_run.addprevious(my_run)

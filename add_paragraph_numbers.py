@@ -1,5 +1,5 @@
-# Written by Mark Lindberg. Copywrite 2017.
-# Mucho thanks to Ravi and Ross.
+# Written by Mark Lindberg. Copyright 2017-2023.
+# Mucho thanks to Ravi and Ross for testing.
 # License: Modify and use as you wish.
 
 import zipfile
@@ -9,50 +9,8 @@ from lxml import etree
 from argparse import ArgumentParser
 from os.path import isfile
 
-# This matches all tab styles that I found.
-# If I'm missing a paragraph, let me know.
-# I likely need to fix this.
-# pattern = r'(<w:pPr><w:ind w:firstLine="720"/></w:pPr>|<w:r><w:tab/>|<w:r><w:lastRenderedPageBreak/><w:tab/>|<w:r><w:rPr><w:rStyle w:val=\"st\"/></w:rPr><w:tab/>|<w:r><w:rPr><w:rStyle w:val=\"st\"/></w:rPr><w:lastRenderedPageBreak/><w:tab/>|<w:r><w:rPr><w:rFonts w:ascii="Garamond" w:hAnsi="Garamond" w:cs="Garamond"/></w:rPr><w:|<w:r><w:rPr><w:rFonts w:ascii="Garamond" w:hAnsi="Garamond" w:cs="Garamond"/><w:u w:val="single"/></w:rPr>|<w:r w:rsidRPr="008715BA"><w:rPr><w:rFonts w:ascii="Garamond" w:hAnsi="Garamond" w:cs="Garamond"/></w:rPr>|<w:r w:rsidRPr="008715BA"><w:rPr><w:rFonts w:ascii="Garamond" w:hAnsi="Garamond" w:cs="Garamond"/><w:color w:val="000000"/></w:rPr>|<w:r w:rsidRPr="008715BA"><w:rPr><w:rFonts w:ascii="Garamond" w:hAnsi="Garamond" w:cs="Garamond"/><w:u w:val="single"/></w:rPr>|<w:r w:rsidRPr="008715BA"><w:rPr><w:rFonts w:ascii="Garamond" w:hAnsi="Garamond" w:cs="Garamond"/><w:color w:val="000000"/><w:u w:val="single"/></w:rPr>|<w:r w:rsidRPr="008715BA"><w:rPr><w:rFonts w:ascii="Garamond" w:hAnsi="Garamond"/></w:rPr><w:t|<w:pPr><w:tabs>|<w:rFonts w:ascii="Garamond" w:hAnsi="Garamond"/><w:caps w:val="0"/><w:smallCaps w:val="0"/><w:rtl w:val="0"/><w:lang w:val="en-US"/>|<w:rFonts w:ascii="Garamond" w:cs="Garamond" w:hAnsi="Garamond" w:eastAsia="Garamond"/><w:caps w:val="0"/><w:smallCaps w:val="0"/></w:rPr></w:pPr>)(?!</w:r></w:p>)'
-pattern = r'(<w:ind w:firstLine="360"/><w:rPr><w:rFonts w:ascii="Garamond" w:cs="Garamond" w:hAnsi="Garamond" w:eastAsia="Garamond"/><w:caps w:val="0"/><w:smallCaps w:val="0"/></w:rPr></w:pPr>)(<w:r><w:rPr>)'
-reg    = re.compile(pattern)
-inline = '<w:tabs><w:tab w:val="left" w:pos="360"/><w:tab w:val="left" w:pos="720"/><w:tab w:val="left" w:pos="1080"/><w:tab w:val="left" w:pos="1440"/><w:tab w:val="left" w:pos="1800"/><w:tab w:val="left" w:pos="2160"/><w:tab w:val="left" w:pos="2520"/><w:tab w:val="left" w:pos="2880"/><w:tab w:val="left" w:pos="3240"/><w:tab w:val="left" w:pos="3600"/><w:tab w:val="left" w:pos="3960"/><w:tab w:val="left" w:pos="4320"/><w:tab w:val="left" w:pos="4680"/><w:tab w:val="left" w:pos="5040"/><w:tab w:val="left" w:pos="5400"/><w:tab w:val="left" w:pos="5760"/><w:tab w:val="left" w:pos="6120"/><w:tab w:val="left" w:pos="6480"/><w:tab w:val="left" w:pos="6840"/><w:tab w:val="left" w:pos="7200"/><w:tab w:val="left" w:pos="7560"/><w:tab w:val="left" w:pos="7920"/><w:tab w:val="left" w:pos="8280"/><w:tab w:val="left" w:pos="8640"/><w:tab w:val="left" w:pos="9000"/></w:tabs><w:rPr><w:rFonts w:ascii="Garamond" w:cs="Garamond" w:hAnsi="Garamond" w:eastAsia="Garamond"/><w:caps w:val="0"/><w:smallCaps w:val="0"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Garamond" w:hAnsi="Garamond"/><w:outline w:val="0"/><w:color w:val="a7a7a7"/><w:vertAlign w:val="superscript"/><w:rtl w:val="0"/><w:lang w:val="en-US"/><w14:textFill><w14:solidFill><w14:srgbClr w14:val="A7A7A7"/></w14:solidFill></w14:textFill></w:rPr><w:t>{}</w:t></w:r><w:r><w:rPr><w:rFonts w:ascii="Garamond" w:cs="Garamond" w:hAnsi="Garamond" w:eastAsia="Garamond"/><w:vertAlign w:val="superscript"/><w:rtl w:val="0"/></w:rPr><w:tab/><w:t xml:space="preserve"> </w:t></w:r>'
-    
-nothing = '<w:tab w:val="left" w:pos="720"/><w:tab w:val="left" w:pos="1080"/><w:tab w:val="left" w:pos="1440"/><w:tab w:val="left" w:pos="1800"/><w:tab w:val="left" w:pos="2160"/><w:tab w:val="left" w:pos="2520"/><w:tab w:val="left" w:pos="2880"/><w:tab w:val="left" w:pos="3240"/><w:tab w:val="left" w:pos="3600"/><w:tab w:val="left" w:pos="3960"/><w:tab w:val="left" w:pos="4320"/><w:tab w:val="left" w:pos="4680"/><w:tab w:val="left" w:pos="5040"/><w:tab w:val="left" w:pos="5400"/><w:tab w:val="left" w:pos="5760"/><w:tab w:val="left" w:pos="6120"/><w:tab w:val="left" w:pos="6480"/><w:tab w:val="left" w:pos="6840"/><w:tab w:val="left" w:pos="7200"/><w:tab w:val="left" w:pos="7560"/><w:tab w:val="left" w:pos="7920"/><w:tab w:val="left" w:pos="8280"/><w:tab w:val="left" w:pos="8640"/><w:tab w:val="left" w:pos="9000"/></w:tabs><w:rPr><w:rFonts w:ascii="Garamond" w:cs="Garamond" w:hAnsi="Garamond" w:eastAsia="Garamond"/><w:caps w:val="0"/><w:smallCaps w:val="0"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Garamond" w:hAnsi="Garamond"/><w:outline w:val="0"/><w:color w:val="a7a7a7"/><w:vertAlign w:val="superscript"/><w:rtl w:val="0"/><w:lang w:val="en-US"/><w14:textFill><w14:solidFill><w14:srgbClr w14:val="A7A7A7"/></w14:solidFill></w14:textFill></w:rPr><w:t>{}</w:t></w:r>'
-
-stuff =  '''
-<w:r>
-    <w:pict>
-        <v:shape type="#_x0000_t202" style="position:absolute;margin-left:-52.5pt;margin-top:-4pt;width:50.25pt;height:19.5pt;z-index:251659776;visibility:visible;mso-wrap-style:square;mso-width-percent:0;mso-wrap-distance-left:9pt;mso-wrap-distance-top:0;mso-wrap-distance-right:9pt;mso-wrap-distance-bottom:0;mso-position-horizontal:absolute;mso-position-horizontal-relative:text;mso-position-vertical:absolute;mso-position-vertical-relative:text;mso-width-percent:0;mso-width-relative:margin;v-text-anchor:top" stroked="f">
-            <v:textbox>
-                <w:txbxContent>
-                    <w:p>
-                        <w:r>
-                            <w:rPr>
-                                <w:color w:val="AAAAAA" />
-                            </w:rPr>
-                            <w:t>{}</w:t>
-                        </w:r>
-                    </w:p>
-                </w:txbxContent>
-            </v:textbox>
-        </v:shape>
-    </w:pict>
-</w:r>
-'''
-margin = '''
-    <w:r>
-        <w:rPr>
-            <w:color w:val="AAAAAA" />
-            <w:vertAlign w:val="superscript"/>
-        </w:rPr>
-        <w:t>{} </w:t>
-    </w:r>
-    '''
-
-namespace = {
-    'word': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
-}
-
+w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+ns = {"w": w}
 
 def insertParNums(old, newMargin, newInline):
     '''
@@ -61,7 +19,6 @@ def insertParNums(old, newMargin, newInline):
     '''
     zin = zipfile.ZipFile(old, 'r')
     zoutMargin = zipfile.ZipFile(newInline, 'w')
-    # zoutInline = zipfile.ZipFile(newMargin, 'w')
     # .docx files are actually a zipped up set of xml files.
     for item in zin.infolist():
         buf = zin.read(item.filename)
@@ -70,17 +27,17 @@ def insertParNums(old, newMargin, newInline):
             text = buf.decode('utf-8')
             parser = etree.XMLParser(no_network=False)
             root = etree.fromstring(text.encode(), parser)
-            w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-            ns = {"w": w}
             paragraphs = root.findall('.//w:p', ns)
             count = 1
             for p in paragraphs:
+                # Paragraphs that have text.
                 if p.findall('.//w:t', ns):
                     first_run = p.find('.//w:r', ns)
                     first_text = first_run.find('.//w:t', ns)
                     lower_text = first_text.text.lower().strip()
-                    if (lower_text.startswith('prologue') or 
-                        lower_text.startswith('chapter') or 
+                    # Reset numbering on each chapter.
+                    if (lower_text.startswith('prologue') or
+                        lower_text.startswith('chapter') or
                         lower_text.startswith('epilogue')):
                         count = 1
                         continue
@@ -96,16 +53,17 @@ def insertParNums(old, newMargin, newInline):
                     count += 1
             # Write out all files, including modified text.
             zoutMargin.writestr(item, etree.tostring(root))
-            # zoutInline.writestr(item, finalInline.encode('utf-8'))
         else:
             zoutMargin.writestr(item, buf)
-            # zoutInline.writestr(item, buf)
     zoutMargin.close()
-    # zoutInline.close()
     zin.close()
 
 
-def newParNums(oldFile, newFile):
+def docxParNums(oldFile, newFile):
+    '''
+    This will insert the paragraph numbers using the docx library, but also has
+    to copy over the text of the paragraph, and may lose formatting.
+    '''
     from docx import Document
     from docx.shared import RGBColor, Inches
     doc = Document(oldFile)
@@ -115,8 +73,8 @@ def newParNums(oldFile, newFile):
         if paragraph.text.strip() == '':
             continue
         lower_text = paragraph.text.lower().strip()
-        if (lower_text.startswith('prologue') or 
-            lower_text.startswith('chapter') or 
+        if (lower_text.startswith('prologue') or
+            lower_text.startswith('chapter') or
             lower_text.startswith('epilogue')):
             count = 1
             continue
@@ -176,6 +134,6 @@ if __name__ == '__main__':
     if args.view:
         viewText(filename)
     elif args.docx:
-        newParNums(filename, inlineFile)
+        docxParNums(filename, inlineFile)
     else:
         insertParNums(filename, marginFile, inlineFile)
